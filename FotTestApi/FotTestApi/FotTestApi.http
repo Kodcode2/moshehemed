@@ -1,0 +1,6 @@
+@FotTestApi_HostAddress = http://localhost:5063
+
+GET {{FotTestApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
