@@ -32,15 +32,15 @@ namespace FotTestApi.Controllers
 		[ProducesResponseType(StatusCodes.Status200OK)]
 		[ProducesResponseType(StatusCodes.Status404NotFound)]
 		public async Task<ActionResult> StartingPosition([FromBody] LocationDto locationAgent, int id)
-		{ 
+		{
 			try
 			{
 				await agenService.StartingPositionService(locationAgent, id);
 
 				return Ok("Update successfully");
-				}
-				catch (Exception ex)
-				{
+			}
+			catch (Exception ex)
+			{
 				return BadRequest(ex.Message);
 			}
 		}
@@ -55,7 +55,7 @@ namespace FotTestApi.Controllers
 			{
 				AgentModel? agent = await agenService.StepsAgent(diraction.direction, id);
 				return Ok($"The proof position is x= {agent?.Location_x}, y = {agent?.Location_y}");
-				
+
 			}
 			catch (Exception ex)
 			{
@@ -64,13 +64,13 @@ namespace FotTestApi.Controllers
 		}
 		[HttpGet]
 		[ProducesResponseType(StatusCodes.Status200OK)]
-		
+
 		public async Task<ActionResult> GetAllAgents()
 		{
-			List<AgentModel>? a=  await agenService.GetAllAgent();
-			return Ok(a);
+			List<AgentModel>? agents = await agenService.GetAllAgent();
+			return Ok(agents);
 
 		}
-		
+
 	}
 }

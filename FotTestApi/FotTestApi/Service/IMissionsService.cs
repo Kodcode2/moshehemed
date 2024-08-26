@@ -11,5 +11,8 @@ namespace FotTestApi.Service
 		Task GetMissionAtStatusActiveForSteps();
 		Task StepsTheAnAgentToTarget(MissionModel mission);
 		Task UpdateAtEndOfTheMission(int id);
-	}
+		Task<List<MissionModel>> GetAllMissionswithoutIclude();
+		Task<List<MissionModel>> GetMissionsByStatuswithOutInclude(StatusMission status);
+
+    }
 }
