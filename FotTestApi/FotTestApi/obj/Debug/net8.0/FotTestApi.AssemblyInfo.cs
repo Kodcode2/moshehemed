@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("FotTestApi")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+db25bd81d06422a0eaa7782b6f6153d3e30022a6")]
 [assembly: System.Reflection.AssemblyProductAttribute("FotTestApi")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FotTestApi")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

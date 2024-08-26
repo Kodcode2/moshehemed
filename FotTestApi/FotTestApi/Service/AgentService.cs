@@ -82,35 +82,59 @@ public class AgentService : IAgenService
 		}
 	}
 
-	public async Task<AgentModel?> StepsAgent(string diraction, int id)
+	public async Task<AgentModel?> StepsAgent(string direction, int id)
 	{
 		try
 		{
-			bool keyExists = stepsByDirection.ContainsKey(diraction);
-			if (!keyExists)
+			// בודק אם הכיוון קיים במילון
+			if (!stepsByDirection.ContainsKey(direction))
 			{
 				throw new Exception(ErrorMassage.notContainsKey);
 			}
-			var (xForTuple, yForTuple) = stepsByDirection[diraction];
+
+			var (xForTuple, yForTuple) = stepsByDirection[direction];
 			AgentModel? agent = await FindByIdService(id);
+
+			switch (agent)
+			{
+			case null:
+			// אם הסוכן הוא null, מחזירים null
+			return null;
+
+			case { Status: StatusAgent.Active }:
+			// אם הסוכן פעיל, מחזירים null
+			return null;
+
+			case { Status: StatusAgent.Inactive }:
+			// אם הסוכן אינו פעיל, מבצע את הפעולות הדרושות
 			TestLocation(new()
 			{
-				x = xForTuple + agent!.Location_x,
+				x = xForTuple + agent.Location_x,
 				y = yForTuple + agent.Location_y
 			});
+
 			agent.Location_x += xForTuple;
 			agent.Location_y += yForTuple;
-			await _context.SaveChangesAsync();
-			await _missionsService.CheckIfCreateMission();
-			return agent;
 
+			await _context.SaveChangesAsync(); 
+			await _missionsService.CheckIfCreateMission(); 
+
+			return agent; 
+
+			default:
+			
+			return null;
+			}
 		}
 		catch (Exception ex)
 		{
+			
 			throw new Exception($"{ex.Message}", ex);
 		}
-
 	}
+
+
+
 
 	public async Task<List<AgentModel>?> GetAllAgent() =>
 		await _context.Agents.ToListAsync();

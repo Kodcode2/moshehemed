@@ -90,6 +90,17 @@ namespace FotTestApi.Service
 				}
 				var (xForTuple, yForTuple) = stepsByDirection[diractionDto.direction];
 				TargetModel? target = await FindTargetByIdService(id);
+				switch (target)
+				{
+				case null:
+
+				return null;
+
+				case { Status: StatusTarget.Eliminated }:
+
+				return null;
+
+				default:
 				TestLocation(new()
 				{
 					x = xForTuple + target!.Location_x,
@@ -100,6 +111,9 @@ namespace FotTestApi.Service
 				await _context.SaveChangesAsync();
 				await _missionsService.CheckIfCreateMission();
 				return target;
+
+				}
+
 			}
 			catch (Exception ex)
 			{

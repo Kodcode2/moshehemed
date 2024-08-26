@@ -4529,11 +4529,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\HP\\source\\repos\\FotTestApi\\FotTestApi\\FotTestApi.csproj",
+      "projectUniqueName": "C:\\Users\\HP\\source\\repos\\moshehemed\\FotTestApi\\FotTestApi\\FotTestApi.csproj",
       "projectName": "FotTestApi",
-      "projectPath": "C:\\Users\\HP\\source\\repos\\FotTestApi\\FotTestApi\\FotTestApi.csproj",
+      "projectPath": "C:\\Users\\HP\\source\\repos\\moshehemed\\FotTestApi\\FotTestApi\\FotTestApi.csproj",
       "packagesPath": "C:\\Users\\HP\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\HP\\source\\repos\\FotTestApi\\FotTestApi\\obj\\",
+      "outputPath": "C:\\Users\\HP\\source\\repos\\moshehemed\\FotTestApi\\FotTestApi\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

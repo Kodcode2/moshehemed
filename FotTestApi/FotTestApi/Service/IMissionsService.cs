@@ -3,7 +3,7 @@ namespace FotTestApi.Service
 {
 	public interface IMissionsService
 	{
-		MissionModel CreateNewMission(AgentModel agent, TargetModel target, double distance);
+		MissionModel? CreateNewMission(AgentModel agent, TargetModel target, double distance);
 		Task CheckIfCreateMission();
 		Task<List<MissionModel>> GetAllMissions();
 		Task<List<MissionModel>> GetMissionsByStatus(StatusMission status);

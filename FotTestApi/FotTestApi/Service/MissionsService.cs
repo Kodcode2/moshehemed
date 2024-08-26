@@ -1,26 +1,30 @@
-﻿using System.Diagnostics;
-using System.Reflection;
+﻿using System;
+using System.Collections.Immutable;
+using System.Diagnostics;
+using System.Numerics;
 using FotTestApi.Data;
 using FotTestApi.Models;
 using Microsoft.EntityFrameworkCore;
 
+
 namespace FotTestApi.Service
 {
 
-	public class MissionsService : IMissionsService
+	public class MissionService : IMissionsService
 	{
-		private readonly ApplicationBDContext _context;
+		private readonly IServiceProvider _serviceProvider;
 		private static Dictionary<(int idAgent, int IdTarget), MissionModel> _DictOfmissions = new();
+		private static Dictionary<(int idAgent, int IdTarget), double> _DictOfDistance = new();
 		private static Dictionary<int, Stopwatch> _stopwatch = new();
-		private TimeSpan _elapsedTime;
-
-
-		public MissionsService(ApplicationBDContext context)
+		private static List<(int idAgent, int IdTarget)> _allMissionsIntoDB = new();
+		public MissionService(IServiceProvider serviceProvider, ApplicationBDContext context)
 		{
-			_context = context;
-
+			_serviceProvider = serviceProvider;
 		}
-		public MissionModel CreateNewMission(AgentModel agent, TargetModel target, double distance)
+
+
+
+		public MissionModel? CreateNewMission(AgentModel agent, TargetModel target, double distance)
 		{
 
 			return new()
@@ -31,82 +35,111 @@ namespace FotTestApi.Service
 				IdTarget = target.Id,
 				RemainingTime = TimeSpan.FromHours(distance / 5).ToString(@"hh\:mm\:ss"),
 				Status = StatusMission.Proposal
+
 			};
+
+
 		}
 
 		public async Task CheckIfCreateMission()
 		{
-			List<AgentModel> agents = await _context.Agents
+			using var dbContext = DbContextFactory.CreateDbContext(_serviceProvider);
+
+			List<AgentModel> agents = await dbContext.Agents
 				.Where(a => a.Status == StatusAgent.Inactive).ToListAsync();
-			List<TargetModel> targets = await _context.Targets
+
+			List<TargetModel> livingTargets = await dbContext.Targets
 				.Where(a => a.Status == StatusTarget.Live).ToListAsync();
-			MissionModel? newMission = null;
-			foreach (var agent in agents)
+
+			List<MissionModel> missions = await dbContext.Missions
+				.Include(m => m.Agent).Include(m => m.Target)
+				.ToListAsync();
+			var agentTargetPairs = agents
+		   .SelectMany(agent => livingTargets, (agent, target) => new
+		   {
+			   Agent = agent,
+			   Target = target,
+			   Distance = CalculateDistanceDouble(agent, target)
+		   })
+		   .Where(pair =>
+		   pair.Distance <= 200.0
+		   && IsValidLocationAgen(pair.Agent)
+		   && IsValidLocationTarget(pair.Target))
+		   .ToList();
+
+			List<MissionModel?> newMissions = agentTargetPairs
+			.Where(pair => !missions.Any(m => m.Agent.Id == pair.Agent.Id && m.Target.Id == pair.Target.Id))
+			.Select(pair => CreateNewMission(pair.Agent, pair.Target, pair.Distance)).ToList();
+			if (newMissions.Any())
 			{
-				foreach (var target in targets)
-				{
-					double distance = CalculateDistance(agent.Location_x, agent.Location_y, target.Location_x, target.Location_y);
-					if (distance < 200)
-					{
-						if (await CheckIfMissionExist(agent, target))
-						{
-							continue;
-						}
-
-						newMission = CreateNewMission(agent, target, distance);
-						await _context.Missions.AddAsync(newMission);
-						await _context.SaveChangesAsync();
-
-					}
-				}
+				await dbContext.Missions.AddRangeAsync(newMissions!);
 			}
-
+			await dbContext.SaveChangesAsync();
 		}
 		public async Task<bool> CheckIfMissionExist(AgentModel agent, TargetModel target)
 		{
-			_DictOfmissions = await _context.Missions
+			using var dbContext = DbContextFactory.CreateDbContext(_serviceProvider);
+			_DictOfmissions = await dbContext.Missions.Include(m => m.Agent).Include(m => m.Target)
 				.ToDictionaryAsync(k => (k.Agent.Id, k.Target.Id), v => v);
 			return _DictOfmissions.ContainsKey((agent.Id, target.Id));
 
 		}
-		public static double CalculateDistance(double x1, double y1, double x2, double y2)
+		public static double CalculateDistanceDouble(AgentModel agent, TargetModel target)
 		{
-			return Math.Sqrt(Math.Pow(x2 - x1, 2) + Math.Pow(y2 - y1, 2));
+			double distance =
+				Math.Sqrt(Math.Pow(target.Location_x - agent.Location_x, 2)
+				+ Math.Pow(target.Location_y - agent.Location_y, 2));
+			_DictOfDistance[(agent.Id, target.Id)] = distance;
+			return distance;
 		}
 
-		public async Task<List<MissionModel>> GetAllMissions() =>
-	await _context.Missions
-		.Include(m => m.Agent)
+
+		public static bool CalculateDistance(double x1, double y1, double x2, double y2)
+		{
+			return Math.Sqrt(Math.Pow(x2 - x1, 2) + Math.Pow(y2 - y1, 2)) < 200;
+		}
+		public static bool IsValidLocationAgen(AgentModel agent) =>
+			 agent.Location_x > 0 && agent.Location_y > 0;
+
+		public static bool IsValidLocationTarget(TargetModel target) =>
+			 target.Location_x > 0 && target.Location_y > 0;
+		public async Task<List<MissionModel>> GetAllMissions()
+		{
+			using var dbContext = DbContextFactory.CreateDbContext(_serviceProvider);
+			return await dbContext.Missions
+			.Include(m => m.Agent)
 		.Include(m => m.Target)
 		.ToListAsync();
+		}
 
-		public async Task<List<MissionModel>> GetMissionsByStatus(StatusMission status) =>
-			await _context.Missions.Include(m => m.Agent)
+		public async Task<List<MissionModel>> GetMissionsByStatus(StatusMission status)
+		{
+			using var dbContext = DbContextFactory.CreateDbContext(_serviceProvider);
+
+			return await dbContext.Missions.Include(m => m.Agent)
 		.Include(m => m.Target)
 			.Where(m => m.Status == status).ToListAsync();
+		}
 
 
 		public async Task StartTrackink(int idMission)
 		{
-			try
-			{
-				MissionModel? mission = await GetMissionById(idMission);
-				if (mission == null)
-				{
-					return;
-				}
-				mission.Status = StatusMission.action;
-				mission.Agent.Status = StatusAgent.Active;
-				mission.Target.Status = StatusTarget.monitoredByAnAgent;
-				_stopwatch[mission.Id] = new Stopwatch();
-				_stopwatch[mission.Id].Start();
-				await _context.SaveChangesAsync();
-			}
-			catch (Exception ex)
-			{
-				throw new Exception($"{ex.Message}", ex);
 
+			using var dbContext = DbContextFactory.CreateDbContext(_serviceProvider);
+			MissionModel? mission = await dbContext.Missions.Include(x => x.Agent)
+				.Include(m => m.Target).FirstOrDefaultAsync(x => x.Id == idMission);
+			if (mission == null)
+			{
+				return;
 			}
+
+			mission.Status = StatusMission.action;
+			mission.Agent.Status = StatusAgent.Active;
+			mission.Target.Status = StatusTarget.monitoredByAnAgent;
+			_stopwatch[mission.Id] = new Stopwatch();
+			_stopwatch[mission.Id].Start();
+
+			await dbContext.SaveChangesAsync();
 
 		}
 
@@ -116,7 +149,7 @@ namespace FotTestApi.Service
 			{
 				List<MissionModel> missionsAtStatusActive = await GetMissionsByStatus(StatusMission.action);
 
-				List<Task> tasks = missionsAtStatusActive.Select(m => StepsTheAnAgentToTarget(m)).ToList();
+				List<Task> tasks = missionsAtStatusActive.Select(StepsTheAnAgentToTarget).ToList();
 				await Task.WhenAll(tasks);
 			}
 			catch (Exception ex)
@@ -126,6 +159,9 @@ namespace FotTestApi.Service
 		}
 		public async Task StepsTheAnAgentToTarget(MissionModel mission)
 		{
+			using var dbContext = DbContextFactory.CreateDbContext(_serviceProvider);
+			MissionModel? m = await dbContext.Missions.Include(x => x.Agent).Include(x => x.Target)
+			.FirstOrDefaultAsync(x => x.Id == mission.Id);
 			int agent_x = mission.Agent.Location_x;
 			int agent_y = mission.Agent.Location_y;
 			int target_x = mission.Target.Location_x;
@@ -137,25 +173,30 @@ namespace FotTestApi.Service
 			agent_x += xDirection;
 			agent_y += yDirection;
 
-			mission.Agent.Location_x = agent_x;
-			mission.Agent.Location_y = agent_y;
-
+			m.Agent.Location_x = agent_x;
+			m.Agent.Location_y = agent_y;
+			await dbContext.SaveChangesAsync();
 			if (agent_x == target_x && agent_y == target_y)
 			{
 				await UpdateAtEndOfTheMission(mission.Id);
 				return;
 			}
-			await _context.SaveChangesAsync();
+			
 
 		}
-		public async Task<MissionModel?> GetMissionById(int id) =>
-			await _context.Missions.Include(x => x.Agent).Include(x => x.Target)
+		public async Task<MissionModel?> GetMissionById(int id)
+		{
+			using var dbContext = DbContextFactory.CreateDbContext(_serviceProvider);
+			return await dbContext.Missions.Include(x => x.Agent).Include(x => x.Target)
 			.FirstOrDefaultAsync(x => x.Id == id);
-
+		}
 
 		public async Task UpdateAtEndOfTheMission(int id)
 		{
-			MissionModel? missionAccomplished = await GetMissionById(id);
+			using var dbContext = DbContextFactory.CreateDbContext(_serviceProvider);
+			MissionModel? missionAccomplished = await dbContext.Missions
+				.Include(x => x.Agent).Include(x => x.Target)
+			.FirstOrDefaultAsync(x => x.Id == id);
 			if (missionAccomplished == null)
 			{
 				return;
@@ -165,7 +206,7 @@ namespace FotTestApi.Service
 			missionAccomplished.Agent.Status = StatusAgent.Inactive;
 			_stopwatch[missionAccomplished.Id].Stop();
 			missionAccomplished.ActualExecutionTime = _stopwatch[missionAccomplished.Id].Elapsed.ToString(@"hh\:mm\:ss");
-			await _context.SaveChangesAsync();
+			await dbContext.SaveChangesAsync();
 		}
 	}
 }

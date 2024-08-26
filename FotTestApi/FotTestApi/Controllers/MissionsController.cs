@@ -9,7 +9,7 @@ namespace FotTestApi.Controllers
 	[ApiController]
 	public class MissionsController(IMissionsService missionsService) : ControllerBase
 	{
-		[HttpPut("PUT/missions/update")]
+		[HttpPost("update")]
 		public async Task<ActionResult> StepTowardsTheTarget()
 		{
 			try

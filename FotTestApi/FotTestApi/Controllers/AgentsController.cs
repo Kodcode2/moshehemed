@@ -8,7 +8,7 @@ namespace FotTestApi.Controllers
 {
 	[Route("[controller]")]
 	[ApiController]
-	public class AgentsController(IAgenService agenService) : ControllerBase
+	public class agentsController(IAgenService agenService) : ControllerBase
 	{
 		[HttpPost]
 		[ProducesResponseType(StatusCodes.Status201Created)]
@@ -26,6 +26,8 @@ namespace FotTestApi.Controllers
 			}
 
 		}
+
+
 		[HttpPut("{id}/pin")]
 		[ProducesResponseType(StatusCodes.Status200OK)]
 		[ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -34,10 +36,11 @@ namespace FotTestApi.Controllers
 			try
 			{
 				await agenService.StartingPositionService(locationAgent, id);
+
 				return Ok("Update successfully");
-			}
-			catch (Exception ex)
-			{
+				}
+				catch (Exception ex)
+				{
 				return BadRequest(ex.Message);
 			}
 		}
@@ -45,12 +48,12 @@ namespace FotTestApi.Controllers
 		[HttpPut("{id}/move")]
 		[ProducesResponseType(StatusCodes.Status200OK)]
 		[ProducesResponseType(StatusCodes.Status404NotFound)]
-		public async Task<ActionResult> StepsAgent([FromBody] string diraction, int id)
+		public async Task<ActionResult> StepsAgent([FromBody] DiractionDto diraction, int id)
 		{
 			var a = 8;
 			try
 			{
-				AgentModel? agent = await agenService.StepsAgent(diraction, id);
+				AgentModel? agent = await agenService.StepsAgent(diraction.direction, id);
 				return Ok($"The proof position is x= {agent?.Location_x}, y = {agent?.Location_y}");
 				
 			}
