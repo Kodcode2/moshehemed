@@ -62,6 +62,10 @@ public class AgentService : IAgenService
 		{
 			TestLocation(location);
 			AgentModel? agent = await FindByIdService(id);
+			if (agent!.Status == StatusAgent.Active)
+			{
+				return;
+			}
 			agent!.Location_x = location.x;
 			agent.Location_y = location.y;
 			await _context.SaveChangesAsync();
@@ -98,15 +102,15 @@ public class AgentService : IAgenService
 			switch (agent)
 			{
 			case null:
-			// אם הסוכן הוא null, מחזירים null
+			
 			return null;
 
 			case { Status: StatusAgent.Active }:
-			// אם הסוכן פעיל, מחזירים null
+			
 			return null;
 
 			case { Status: StatusAgent.Inactive }:
-			// אם הסוכן אינו פעיל, מבצע את הפעולות הדרושות
+			
 			TestLocation(new()
 			{
 				x = xForTuple + agent.Location_x,

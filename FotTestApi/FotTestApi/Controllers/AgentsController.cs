@@ -41,16 +41,15 @@ namespace FotTestApi.Controllers
 			}
 			catch (Exception ex)
 			{
-				return BadRequest(ex.Message);
+				return NotFound(ex.Message);
 			}
 		}
 
 		[HttpPut("{id}/move")]
 		[ProducesResponseType(StatusCodes.Status200OK)]
-		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesResponseType(StatusCodes.Status400BadRequest)]
 		public async Task<ActionResult> StepsAgent([FromBody] DiractionDto diraction, int id)
 		{
-			var a = 8;
 			try
 			{
 				AgentModel? agent = await agenService.StepsAgent(diraction.direction, id);

@@ -22,5 +22,19 @@ namespace MVCTest.Controllers
 			}
 			return RedirectToAction("Index", "Home");
 		}
+		public async Task<IActionResult> SelectMissions(int id)
+		{
+			try
+			{
+				await _missionService.SelectMissions(id);
+				return RedirectToAction("Index");
+			}
+			catch
+			{
+				return RedirectToAction("Index", "Home");
+			}
+
+			}
 	}
+
 }

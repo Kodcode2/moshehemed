@@ -19,5 +19,16 @@ namespace MVCTest.Services
 			}
 			return null;
 		}
+
+		public async Task SelectMissions(int id)
+		{
+			var httpClient = httpClientFactory.CreateClient();
+			var result = await httpClient.PutAsync($"{_baseUrl}Missions/start/{id}", null);
+			if (result.IsSuccessStatusCode)
+			{
+				return;
+			}
+			throw new Exception("");
+		}
 	}
 }

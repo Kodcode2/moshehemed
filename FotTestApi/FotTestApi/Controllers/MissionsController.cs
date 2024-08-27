@@ -25,7 +25,7 @@ namespace FotTestApi.Controllers
                 return BadRequest(ex);
             }
         }
-        [HttpPut("PUT/missions/start/{id}")]
+        [HttpPut("start/{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult> StartMission(int id)

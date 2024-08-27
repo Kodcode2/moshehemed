@@ -33,7 +33,7 @@ namespace MVCTest.Controllers
             {
                 return View(mission);
             }
-            return RedirectToAction("Index", "Home");
+            return RedirectToAction("Index");
         }
     }
 }

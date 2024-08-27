@@ -59,6 +59,10 @@ namespace FotTestApi.Service
 			{
 				TestLocation(location);
 				TargetModel? target = await FindTargetByIdService(id);
+				if (target!.Status == StatusTarget.Eliminated)
+				{
+					return;
+				}
 				target!.Location_x = location.x;
 				target.Location_y = location.y;
 				await _context.SaveChangesAsync();
